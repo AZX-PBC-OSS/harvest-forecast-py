@@ -1,0 +1,31 @@
+{
+  "release-type": "python",
+  "package-name": "harvest-forecast-py",
+  "packages": {
+    ".": {
+      "component": "harvest-forecast-py",
+      "package-name": "harvest-forecast-py",
+      "release-type": "python",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/harvest_forecast/__init__.py"
+        }
+      ]
+    }
+  },
+  "changelog-sections": [
+    {"type": "feat", "section": "Features"},
+    {"type": "feature", "section": "Features"},
+    {"type": "fix", "section": "Bug Fixes"},
+    {"type": "perf", "section": "Performance Improvements"},
+    {"type": "revert", "section": "Reverts"},
+    {"type": "docs", "section": "Documentation"},
+    {"type": "style", "section": "Styles", "hidden": true},
+    {"type": "chore", "section": "Miscellaneous Chores", "hidden": true},
+    {"type": "refactor", "section": "Code Refactoring"},
+    {"type": "test", "section": "Tests", "hidden": true},
+    {"type": "build", "section": "Build System"},
+    {"type": "ci", "section": "Continuous Integration"}
+  ]
+}

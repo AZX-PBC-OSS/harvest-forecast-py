@@ -1,6 +1,7 @@
 {
   "release-type": "python",
   "package-name": "harvest-forecast-py",
+  "include-component-in-tag": false,
   "packages": {
     ".": {
       "component": "harvest-forecast-py",

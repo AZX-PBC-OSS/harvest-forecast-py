@@ -1,6 +1,6 @@
 [project]
 name = "harvest-forecast-py"
-version = "0.2.0"
+version = "0.2.1"
 description = "Python client for the Harvest Forecast API — async and sync, with full coverage."
 readme = "README.md"
 license = { file = "LICENSE" }

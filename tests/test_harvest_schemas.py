@@ -381,3 +381,146 @@ class TestHarvestModelsInheritForecastModel:
             HarvestCurrentUser,
         ):
             assert issubclass(model, ForecastModel)
+
+
+class TestHarvestContact:
+    def test_from_api_json(self) -> None:
+        from harvest_forecast.schemas import HarvestContact
+
+        contact = HarvestContact.model_validate(
+            {
+                "id": 4706479,
+                "title": "Owner",
+                "first_name": "Jane",
+                "last_name": "Doe",
+                "email": "jane@example.com",
+                "client": {"id": 5735774, "name": "ABC Corp", "currency": "USD"},
+                "created_at": "2017-06-26T22:32:52Z",
+                "updated_at": "2017-06-26T22:32:52Z",
+            }
+        )
+        assert contact.id == 4706479
+        assert contact.first_name == "Jane"
+        assert contact.client.name == "ABC Corp"
+
+    def test_extras_preserved(self) -> None:
+        from harvest_forecast.schemas import HarvestContact
+
+        contact = HarvestContact.model_validate(
+            {
+                "id": 1,
+                "first_name": "Jane",
+                "client": {"id": 2, "name": "X"},
+                "created_at": "2017-06-26T22:32:52Z",
+                "updated_at": "2017-06-26T22:32:52Z",
+                "future_field": {"nested": True},
+            }
+        )
+        dumped = contact.model_dump(mode="json")
+        assert dumped["future_field"] == {"nested": True}
+
+
+class TestHarvestRole:
+    def test_from_api_json(self) -> None:
+        from harvest_forecast.schemas import HarvestRole
+
+        role = HarvestRole.model_validate(
+            {
+                "id": 1782974,
+                "name": "Developer",
+                "user_ids": [1, 2, 3],
+                "created_at": "2017-06-26T22:32:52Z",
+                "updated_at": "2017-06-26T22:32:52Z",
+            }
+        )
+        assert role.user_ids == [1, 2, 3]
+
+    def test_requires_updated_at(self) -> None:
+        from harvest_forecast.schemas import HarvestRole
+
+        with pytest.raises(ValidationError):
+            HarvestRole.model_validate({"id": 1, "name": "X", "created_at": "2017-06-26T22:32:52Z"})
+
+
+class TestHarvestTaskAssignment:
+    def test_from_api_json(self) -> None:
+        from harvest_forecast.schemas import HarvestTaskAssignment
+
+        ta = HarvestTaskAssignment.model_validate(
+            {
+                "id": 155058494,
+                "task": {"id": 8083365, "name": "Graphic Design"},
+                "project": {"id": 14307913, "name": "Marketing Website", "code": "MW-001"},
+                "is_active": True,
+                "billable": True,
+                "hourly_rate": "100.0",
+                "budget": None,
+                "created_at": "2017-06-26T22:32:52Z",
+                "updated_at": "2017-06-26T22:32:52Z",
+            }
+        )
+        assert ta.task.name == "Graphic Design"
+        assert ta.hourly_rate == Decimal("100.0")
+        assert ta.budget is None
+
+
+class TestHarvestInvoice:
+    def test_from_api_json(self) -> None:
+        from harvest_forecast.schemas import HarvestInvoice
+
+        invoice = HarvestInvoice.model_validate(
+            {
+                "id": 13150403,
+                "client": {"id": 5735774, "name": "ABC Corp"},
+                "creator": {"id": 1782884, "name": "Bob Powell"},
+                "number": "1000",
+                "amount": "10700.0",
+                "due_amount": "0.0",
+                "state": "paid",
+                "issue_date": "2017-04-01",
+                "due_date": "2017-05-01",
+                "paid_date": "2017-04-15",
+                "line_items": [{"id": 53341601, "kind": "Service"}],
+                "created_at": "2017-06-27T16:24:30Z",
+                "updated_at": "2017-06-27T16:24:57Z",
+            }
+        )
+        assert invoice.amount == Decimal("10700.0")
+        assert invoice.paid_date == date(2017, 4, 15)
+        assert invoice.line_items[0]["kind"] == "Service"
+
+    def test_line_items_default_empty(self) -> None:
+        from harvest_forecast.schemas import HarvestInvoice
+
+        invoice = HarvestInvoice.model_validate(
+            {
+                "id": 1,
+                "client": {"id": 2, "name": "X"},
+                "amount": "0.0",
+                "due_amount": "0.0",
+                "state": "draft",
+                "created_at": "2017-06-27T16:24:30Z",
+                "updated_at": "2017-06-27T16:24:57Z",
+            }
+        )
+        assert invoice.line_items == []
+
+
+class TestHarvestEstimate:
+    def test_from_api_json(self) -> None:
+        from harvest_forecast.schemas import HarvestEstimate
+
+        estimate = HarvestEstimate.model_validate(
+            {
+                "id": 1439814,
+                "client": {"id": 5735774, "name": "ABC Corp"},
+                "number": "1",
+                "amount": "10000.0",
+                "state": "open",
+                "issue_date": "2017-04-01",
+                "created_at": "2017-04-01T16:24:30Z",
+                "updated_at": "2017-04-01T16:24:57Z",
+            }
+        )
+        assert estimate.state == "open"
+        assert estimate.accepted_at is None

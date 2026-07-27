@@ -421,6 +421,101 @@ class HarvestCurrentUser(ForecastModel):
     roles: list[str] = Field(default_factory=list[str])
 
 
+class HarvestContact(ForecastModel):
+    id: int
+    client: HarvestClientRef
+    title: str | None = None
+    first_name: str
+    last_name: str | None = None
+    email: str | None = None
+    phone_office: str | None = None
+    phone_mobile: str | None = None
+    fax: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class HarvestRole(ForecastModel):
+    id: int
+    name: str
+    user_ids: list[int] = Field(default_factory=list[int])
+    created_at: datetime
+    updated_at: datetime
+
+
+class HarvestTaskAssignment(ForecastModel):
+    id: int
+    project: HarvestProjectRef
+    task: HarvestTaskRef
+    is_active: bool
+    billable: bool
+    hourly_rate: Decimal | None = None
+    budget: Decimal | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class HarvestInvoice(ForecastModel):
+    id: int
+    client: dict[str, Any]
+    line_items: list[dict[str, Any]] = Field(default_factory=list[dict[str, Any]])
+    creator: dict[str, Any] | None = None
+    client_key: str | None = None
+    number: str | None = None
+    purchase_order: str | None = None
+    amount: Decimal
+    due_amount: Decimal
+    tax: Decimal | None = None
+    tax_amount: Decimal | None = None
+    tax2: Decimal | None = None
+    tax2_amount: Decimal | None = None
+    discount: Decimal | None = None
+    discount_amount: Decimal | None = None
+    subject: str | None = None
+    notes: str | None = None
+    state: str
+    period_start: date | None = None
+    period_end: date | None = None
+    issue_date: date | None = None
+    due_date: date | None = None
+    payment_term: str | None = None
+    sent_at: datetime | None = None
+    paid_at: datetime | None = None
+    paid_date: date | None = None
+    closed_at: datetime | None = None
+    recurring_invoice_id: int | None = None
+    currency: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class HarvestEstimate(ForecastModel):
+    id: int
+    client: dict[str, Any]
+    line_items: list[dict[str, Any]] = Field(default_factory=list[dict[str, Any]])
+    creator: dict[str, Any] | None = None
+    client_key: str | None = None
+    number: str | None = None
+    purchase_order: str | None = None
+    amount: Decimal
+    tax: Decimal | None = None
+    tax_amount: Decimal | None = None
+    tax2: Decimal | None = None
+    tax2_amount: Decimal | None = None
+    discount: Decimal | None = None
+    discount_amount: Decimal | None = None
+    subject: str | None = None
+    notes: str | None = None
+    state: str
+    issue_date: date | None = None
+    sent_at: datetime | None = None
+    accepted_at: datetime | None = None
+    declined_at: datetime | None = None
+    currency: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
 __all__ = [
     "Account",
     "Assignment",
@@ -433,10 +528,15 @@ __all__ = [
     "FutureScheduledHoursItem",
     "HarvestClient",
     "HarvestClientRef",
+    "HarvestContact",
     "HarvestCurrentUser",
+    "HarvestEstimate",
+    "HarvestInvoice",
     "HarvestProject",
     "HarvestProjectRef",
+    "HarvestRole",
     "HarvestTask",
+    "HarvestTaskAssignment",
     "HarvestTaskRef",
     "HarvestTimeEntry",
     "HarvestUser",

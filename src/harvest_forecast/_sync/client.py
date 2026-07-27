@@ -197,7 +197,7 @@ class SyncForecastClient:
                 return
         raise RuntimeError("unreachable")  # pragma: no cover
 
-    def _paginate(
+    def paginate(
         self, path: str, list_field: str, *, params: dict[str, str] | None = None
     ) -> Iterator[dict[str, Any]]:
         """Yield raw item dicts across every page of a Forecast list endpoint.
@@ -228,7 +228,7 @@ class SyncForecastClient:
             next_url = links.get("next")
             is_first = False
 
-    def _paginate_windowed(
+    def paginate_windowed(
         self,
         path: str,
         list_field: str,
@@ -271,7 +271,7 @@ class SyncForecastClient:
                 "start_date": current.isoformat(),
                 "end_date": window_end.isoformat(),
             }
-            for item in self._paginate(path, list_field, params=window_params):
+            for item in self.paginate(path, list_field, params=window_params):
                 item_id = item.get("id")
                 if item_id is not None and item_id not in seen:
                     seen.add(item_id)
@@ -299,7 +299,7 @@ class SyncForecastClient:
         params = filter.to_params()
         return [
             Assignment.model_validate(item)
-            for item in self._paginate_windowed(
+            for item in self.paginate_windowed(
                 "/assignments",
                 "assignments",
                 filter.start_date,
@@ -314,7 +314,7 @@ class SyncForecastClient:
         Returns:
             List of Client objects.
         """
-        return [Client.model_validate(item) for item in self._paginate("/clients", "clients")]
+        return [Client.model_validate(item) for item in self.paginate("/clients", "clients")]
 
     def list_milestones(self) -> list[Milestone]:
         """List all milestones in the Forecast account.
@@ -324,7 +324,7 @@ class SyncForecastClient:
         """
         return [
             Milestone.model_validate(item)
-            for item in self._paginate("/milestones", "milestones")
+            for item in self.paginate("/milestones", "milestones")
         ]
 
     def list_people(self) -> list[Person]:
@@ -333,7 +333,7 @@ class SyncForecastClient:
         Returns:
             List of Person objects.
         """
-        return [Person.model_validate(item) for item in self._paginate("/people", "people")]
+        return [Person.model_validate(item) for item in self.paginate("/people", "people")]
 
     def list_placeholders(self) -> list[Placeholder]:
         """List all placeholders being scheduled in Forecast.
@@ -343,7 +343,7 @@ class SyncForecastClient:
         """
         return [
             Placeholder.model_validate(item)
-            for item in self._paginate("/placeholders", "placeholders")
+            for item in self.paginate("/placeholders", "placeholders")
         ]
 
     def list_projects(self) -> list[Project]:
@@ -353,7 +353,7 @@ class SyncForecastClient:
             List of Project objects.
         """
         return [
-            Project.model_validate(item) for item in self._paginate("/projects", "projects")
+            Project.model_validate(item) for item in self.paginate("/projects", "projects")
         ]
 
     def list_roles(self) -> list[Role]:
@@ -362,7 +362,7 @@ class SyncForecastClient:
         Returns:
             List of Role objects.
         """
-        return [Role.model_validate(item) for item in self._paginate("/roles", "roles")]
+        return [Role.model_validate(item) for item in self.paginate("/roles", "roles")]
 
     def list_repeated_assignment_sets(self) -> list[RepeatedAssignmentSet]:
         """List all repeated assignment sets in the Forecast account.
@@ -372,7 +372,7 @@ class SyncForecastClient:
         """
         return [
             RepeatedAssignmentSet.model_validate(item)
-            for item in self._paginate(
+            for item in self.paginate(
                 "/repeated_assignment_sets", "repeated_assignment_sets"
             )
         ]
@@ -385,7 +385,7 @@ class SyncForecastClient:
         """
         return [
             UserConnection.model_validate(item)
-            for item in self._paginate("/user_connections", "user_connections")
+            for item in self.paginate("/user_connections", "user_connections")
         ]
 
     def get_person(self, id: int) -> Person:

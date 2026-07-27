@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import UTC, date, datetime, timedelta, timezone
 from decimal import Decimal
 from urllib.parse import parse_qs, urlparse
 
@@ -705,3 +705,329 @@ def test_paginate_detects_loop(
             projects = client.list_projects()
     assert len(projects) == 1
     assert route.call_count == 1
+
+
+# ---------- new endpoints & updated_since ----------
+
+
+def _contact_data(cid: int = 4706479) -> dict:
+    return {
+        "id": cid,
+        "title": "Owner",
+        "first_name": "Jane",
+        "last_name": "Doe",
+        "email": "jane@example.com",
+        "phone_office": "(203) 555-1234",
+        "phone_mobile": None,
+        "fax": None,
+        "client": _client_ref(),
+        "created_at": "2017-06-26T22:32:52Z",
+        "updated_at": "2017-06-26T22:32:52Z",
+    }
+
+
+def _role_data(rid: int = 1782974) -> dict:
+    return {
+        "id": rid,
+        "name": "Developer",
+        "user_ids": [1, 2],
+        "created_at": "2017-06-26T22:32:52Z",
+        "updated_at": "2017-06-26T22:32:52Z",
+    }
+
+
+def _task_assignment_data(taid: int = 155058494) -> dict:
+    return {
+        "id": taid,
+        "task": _task_ref(),
+        "project": _project_ref(),
+        "is_active": True,
+        "billable": True,
+        "hourly_rate": "100.0",
+        "budget": None,
+        "created_at": "2017-06-26T22:32:52Z",
+        "updated_at": "2017-06-26T22:32:52Z",
+    }
+
+
+def _invoice_data(iid: int = 13150403) -> dict:
+    return {
+        "id": iid,
+        "client_key": "9dc766207f04a0128d428ac511d6a3f5",
+        "number": "1000",
+        "purchase_order": "PO-1",
+        "amount": "10700.0",
+        "due_amount": "0.0",
+        "tax": "5.0",
+        "tax_amount": "500.0",
+        "tax2": None,
+        "tax2_amount": None,
+        "discount": None,
+        "discount_amount": None,
+        "subject": "Website work",
+        "notes": None,
+        "state": "paid",
+        "period_start": "2017-03-01",
+        "period_end": "2017-03-31",
+        "issue_date": "2017-04-01",
+        "due_date": "2017-05-01",
+        "payment_term": "upon receipt",
+        "sent_at": "2017-04-01T12:00:00Z",
+        "paid_at": "2017-04-15T12:00:00Z",
+        "paid_date": "2017-04-15",
+        "closed_at": None,
+        "recurring_invoice_id": None,
+        "currency": "USD",
+        "client": {"id": 5735774, "name": "ABC Corp"},
+        "creator": {"id": 1782884, "name": "Bob Powell"},
+        "line_items": [
+            {
+                "id": 53341601,
+                "kind": "Service",
+                "description": "Design",
+                "quantity": "10.0",
+                "unit_price": "1000.0",
+                "amount": "10000.0",
+                "taxed": True,
+                "taxed2": False,
+                "project": {"id": 14307913, "name": "Marketing Website", "code": "MW-001"},
+            }
+        ],
+        "created_at": "2017-06-27T16:24:30Z",
+        "updated_at": "2017-06-27T16:24:57Z",
+    }
+
+
+def _estimate_data(eid: int = 1439814) -> dict:
+    return {
+        "id": eid,
+        "client_key": "9dc766207f04a0128d428ac511d6a3f5",
+        "number": "1",
+        "purchase_order": None,
+        "amount": "10000.0",
+        "tax": None,
+        "tax_amount": None,
+        "tax2": None,
+        "tax2_amount": None,
+        "discount": None,
+        "discount_amount": None,
+        "subject": "Website estimate",
+        "notes": None,
+        "state": "open",
+        "issue_date": "2017-04-01",
+        "sent_at": "2017-04-01T12:00:00Z",
+        "accepted_at": None,
+        "declined_at": None,
+        "currency": "USD",
+        "client": {"id": 5735774, "name": "ABC Corp"},
+        "creator": {"id": 1782884, "name": "Bob Powell"},
+        "line_items": [],
+        "created_at": "2017-04-01T16:24:30Z",
+        "updated_at": "2017-04-01T16:24:57Z",
+    }
+
+
+def test_list_contacts(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        mock.route(method="GET", url__startswith=f"{BASE}/contacts").mock(
+            return_value=httpx.Response(
+                200, json={"contacts": [_contact_data(1), _contact_data(2)], "links": {}}
+            ),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            contacts = client.list_contacts()
+    assert len(contacts) == 2
+    assert contacts[0].first_name == "Jane"
+    assert contacts[0].client.name == "ABC Corp"
+
+
+def test_list_contacts_with_updated_since(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/contacts").mock(
+            return_value=httpx.Response(200, json={"contacts": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_contacts(updated_since=datetime(2026, 1, 1, 12, 30, tzinfo=UTC))
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["updated_since"] == ["2026-01-01T12:30:00Z"]
+
+
+def test_list_roles(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        mock.route(method="GET", url__startswith=f"{BASE}/roles").mock(
+            return_value=httpx.Response(
+                200, json={"roles": [_role_data(1), _role_data(2)], "links": {}}
+            ),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            roles = client.list_roles()
+    assert len(roles) == 2
+    assert roles[0].name == "Developer"
+    assert roles[0].user_ids == [1, 2]
+
+
+def test_list_task_assignments(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        mock.route(method="GET", url__startswith=f"{BASE}/task_assignments").mock(
+            return_value=httpx.Response(
+                200,
+                json={"task_assignments": [_task_assignment_data(1), _task_assignment_data(2)],
+                      "links": {}},
+            ),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            assignments = client.list_task_assignments()
+    assert len(assignments) == 2
+    assert assignments[0].task.name == "Graphic Design"
+    assert assignments[0].project.name == "Marketing Website"
+    assert assignments[0].hourly_rate == Decimal("100.0")
+
+
+def test_list_task_assignments_with_filters(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/task_assignments").mock(
+            return_value=httpx.Response(200, json={"task_assignments": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_task_assignments(is_active=True, updated_since="2026-01-01T00:00:00Z")
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["is_active"] == ["true"]
+    assert qs["updated_since"] == ["2026-01-01T00:00:00Z"]
+
+
+def test_list_user_assignments_account_wide(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/user_assignments").mock(
+            return_value=httpx.Response(
+                200,
+                json={"user_assignments": [_user_assignment_data(1)], "links": {}},
+            ),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            assignments = client.list_user_assignments()
+    assert len(assignments) == 1
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert "project_id" not in qs
+
+
+def test_list_user_assignments_project_scoped_with_updated_since(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    with respx.mock() as mock:
+        route = mock.route(
+            method="GET", url__startswith=f"{BASE}/projects/14307913/user_assignments"
+        ).mock(
+            return_value=httpx.Response(
+                200, json={"user_assignments": [_user_assignment_data(1)], "links": {}}
+            ),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_user_assignments(14307913, updated_since=datetime(2026, 3, 1, tzinfo=UTC))
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["updated_since"] == ["2026-03-01T00:00:00Z"]
+
+
+def test_list_invoices(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        mock.route(method="GET", url__startswith=f"{BASE}/invoices").mock(
+            return_value=httpx.Response(
+                200, json={"invoices": [_invoice_data(1), _invoice_data(2)], "links": {}}
+            ),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            invoices = client.list_invoices()
+    assert len(invoices) == 2
+    assert invoices[0].amount == Decimal("10700.0")
+    assert invoices[0].state == "paid"
+    assert invoices[0].line_items[0]["kind"] == "Service"
+    assert invoices[0].paid_date == date(2017, 4, 15)
+
+
+def test_list_invoices_with_filters(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/invoices").mock(
+            return_value=httpx.Response(200, json={"invoices": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_invoices(state="open", updated_since=datetime(2026, 6, 1, tzinfo=UTC))
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["state"] == ["open"]
+    assert qs["updated_since"] == ["2026-06-01T00:00:00Z"]
+
+
+def test_list_estimates(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        mock.route(method="GET", url__startswith=f"{BASE}/estimates").mock(
+            return_value=httpx.Response(
+                200, json={"estimates": [_estimate_data(1)], "links": {}}
+            ),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            estimates = client.list_estimates()
+    assert len(estimates) == 1
+    assert estimates[0].state == "open"
+    assert estimates[0].amount == Decimal("10000.0")
+
+
+def test_list_time_entries_with_updated_since(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/time_entries").mock(
+            return_value=httpx.Response(200, json={"time_entries": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_time_entries(updated_since=datetime(2026, 7, 1, 8, 0, tzinfo=UTC))
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["updated_since"] == ["2026-07-01T08:00:00Z"]
+
+
+def test_updated_since_naive_datetime_treated_as_utc(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/clients").mock(
+            return_value=httpx.Response(200, json={"clients": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_clients(updated_since=datetime(2026, 2, 2, 3, 4, 5))
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["updated_since"] == ["2026-02-02T03:04:05Z"]
+
+
+def test_updated_since_aware_datetime_normalised_to_utc(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    # 2026-02-02T03:04:05+02:00 == 2026-02-02T01:04:05Z
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/clients").mock(
+            return_value=httpx.Response(200, json={"clients": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_clients(
+                updated_since=datetime(2026, 2, 2, 3, 4, 5, tzinfo=timezone(timedelta(hours=2)))
+            )
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["updated_since"] == ["2026-02-02T01:04:05Z"]
+
+
+def test_paginate_sends_per_page(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/projects").mock(
+            return_value=httpx.Response(200, json={"projects": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_projects()
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["per_page"] == ["2000"]
+
+
+def test_paginate_public_returns_raw_dicts(harvest_client_kwargs: dict[str, object]) -> None:
+    with respx.mock() as mock:
+        mock.route(method="GET", url__startswith=f"{BASE}/projects").mock(
+            return_value=httpx.Response(
+                200, json={"projects": [_project_data(1)], "links": {}}
+            ),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            items = list(client.paginate("/projects", "projects"))
+    assert items == [_project_data(1)]
+    assert isinstance(items[0], dict)

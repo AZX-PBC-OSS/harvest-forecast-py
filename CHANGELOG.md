@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/AZX-PBC-OSS/harvest-forecast-py/compare/v0.2.1...v0.3.0) (2026-07-27)
+
+
+### Features
+
+* Harvest API v2 coverage — async client, updated_since, new endpoints ([43daac6](https://github.com/AZX-PBC-OSS/harvest-forecast-py/commit/43daac654e95900483e500f123d5d10696a9e45b))
+
 ## [0.2.1](https://github.com/AZX-PBC-OSS/harvest-forecast-py/compare/v0.2.0...v0.2.1) (2026-07-22)
 
 

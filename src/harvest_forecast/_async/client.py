@@ -197,7 +197,7 @@ class AsyncForecastClient:
                 return
         raise RuntimeError("unreachable")  # pragma: no cover
 
-    async def _paginate(
+    async def paginate(
         self, path: str, list_field: str, *, params: dict[str, str] | None = None
     ) -> AsyncIterator[dict[str, Any]]:
         """Yield raw item dicts across every page of a Forecast list endpoint.
@@ -228,7 +228,7 @@ class AsyncForecastClient:
             next_url = links.get("next")
             is_first = False
 
-    async def _paginate_windowed(
+    async def paginate_windowed(
         self,
         path: str,
         list_field: str,
@@ -271,7 +271,7 @@ class AsyncForecastClient:
                 "start_date": current.isoformat(),
                 "end_date": window_end.isoformat(),
             }
-            async for item in self._paginate(path, list_field, params=window_params):
+            async for item in self.paginate(path, list_field, params=window_params):
                 item_id = item.get("id")
                 if item_id is not None and item_id not in seen:
                     seen.add(item_id)
@@ -299,7 +299,7 @@ class AsyncForecastClient:
         params = filter.to_params()
         return [
             Assignment.model_validate(item)
-            async for item in self._paginate_windowed(
+            async for item in self.paginate_windowed(
                 "/assignments",
                 "assignments",
                 filter.start_date,
@@ -314,7 +314,7 @@ class AsyncForecastClient:
         Returns:
             List of Client objects.
         """
-        return [Client.model_validate(item) async for item in self._paginate("/clients", "clients")]
+        return [Client.model_validate(item) async for item in self.paginate("/clients", "clients")]
 
     async def list_milestones(self) -> list[Milestone]:
         """List all milestones in the Forecast account.
@@ -324,7 +324,7 @@ class AsyncForecastClient:
         """
         return [
             Milestone.model_validate(item)
-            async for item in self._paginate("/milestones", "milestones")
+            async for item in self.paginate("/milestones", "milestones")
         ]
 
     async def list_people(self) -> list[Person]:
@@ -333,7 +333,7 @@ class AsyncForecastClient:
         Returns:
             List of Person objects.
         """
-        return [Person.model_validate(item) async for item in self._paginate("/people", "people")]
+        return [Person.model_validate(item) async for item in self.paginate("/people", "people")]
 
     async def list_placeholders(self) -> list[Placeholder]:
         """List all placeholders being scheduled in Forecast.
@@ -343,7 +343,7 @@ class AsyncForecastClient:
         """
         return [
             Placeholder.model_validate(item)
-            async for item in self._paginate("/placeholders", "placeholders")
+            async for item in self.paginate("/placeholders", "placeholders")
         ]
 
     async def list_projects(self) -> list[Project]:
@@ -353,7 +353,7 @@ class AsyncForecastClient:
             List of Project objects.
         """
         return [
-            Project.model_validate(item) async for item in self._paginate("/projects", "projects")
+            Project.model_validate(item) async for item in self.paginate("/projects", "projects")
         ]
 
     async def list_roles(self) -> list[Role]:
@@ -362,7 +362,7 @@ class AsyncForecastClient:
         Returns:
             List of Role objects.
         """
-        return [Role.model_validate(item) async for item in self._paginate("/roles", "roles")]
+        return [Role.model_validate(item) async for item in self.paginate("/roles", "roles")]
 
     async def list_repeated_assignment_sets(self) -> list[RepeatedAssignmentSet]:
         """List all repeated assignment sets in the Forecast account.
@@ -372,7 +372,7 @@ class AsyncForecastClient:
         """
         return [
             RepeatedAssignmentSet.model_validate(item)
-            async for item in self._paginate(
+            async for item in self.paginate(
                 "/repeated_assignment_sets", "repeated_assignment_sets"
             )
         ]
@@ -385,7 +385,7 @@ class AsyncForecastClient:
         """
         return [
             UserConnection.model_validate(item)
-            async for item in self._paginate("/user_connections", "user_connections")
+            async for item in self.paginate("/user_connections", "user_connections")
         ]
 
     async def get_person(self, id: int) -> Person:

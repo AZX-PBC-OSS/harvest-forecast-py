@@ -1,11 +1,11 @@
-"""Sync client for the Harvest API v2."""
+"""Async client for the Harvest API v2."""
 
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from datetime import date, datetime
 from typing import Any, Self
 
 import httpx
-from tenacity import Retrying, retry_if_exception, stop_after_attempt
+from tenacity import AsyncRetrying, retry_if_exception, stop_after_attempt
 
 from ..exceptions import ForecastHTTPError
 from ..retry import RetryPolicy, is_retryable
@@ -26,16 +26,18 @@ from ..schemas import (
 from ._params import put_updated_since
 
 
-class SyncHarvestClient:
-    """Sync client for the Harvest API v2.
+class AsyncHarvestClient:
+    """Async client for the Harvest API v2.
+
+    Exported as ``HarvestClient`` from the top-level package.
 
     Example:
-        with SyncHarvestClient(
+        async with HarvestClient(
             access_token="token",
             account_id="123",
             user_agent="my-app (you@example.com)",
         ) as client:
-            projects = client.list_projects()
+            projects = await client.list_projects()
     """
 
     def __init__(
@@ -48,7 +50,7 @@ class SyncHarvestClient:
         timeout: float = 30.0,
         retry: RetryPolicy | None = None,
     ) -> None:
-        """Initialize the sync Harvest client.
+        """Initialize the async Harvest client.
 
         Args:
             access_token: Harvest personal access token.
@@ -59,7 +61,7 @@ class SyncHarvestClient:
             retry: Retry policy for transient failures.
         """
         self._retry = retry or RetryPolicy()
-        self._client = httpx.Client(
+        self._client = httpx.AsyncClient(
             base_url=base_url,
             timeout=httpx.Timeout(timeout, connect=10.0),
             headers={
@@ -72,19 +74,19 @@ class SyncHarvestClient:
             follow_redirects=False,
         )
 
-    def __enter__(self) -> Self:
-        """Enter the context manager."""
+    async def __aenter__(self) -> Self:
+        """Enter the async context manager."""
         return self
 
-    def __exit__(self, *_: object) -> None:
-        """Exit the context manager, closing the HTTP client."""
-        self.close()
+    async def __aexit__(self, *_: object) -> None:
+        """Exit the async context manager, closing the HTTP client."""
+        await self.aclose()
 
-    def close(self) -> None:
+    async def aclose(self) -> None:
         """Close the underlying HTTP client."""
-        self._client.close()
+        await self._client.aclose()
 
-    def _get(self, url: str, params: dict[str, str] | None = None) -> dict[str, Any]:
+    async def _get(self, url: str, params: dict[str, str] | None = None) -> dict[str, Any]:
         """Make a GET request with retry and error mapping.
 
         Args:
@@ -97,20 +99,20 @@ class SyncHarvestClient:
         Raises:
             ForecastHTTPError: On HTTP 4xx/5xx responses.
         """
-        for attempt in Retrying(
+        async for attempt in AsyncRetrying(
             retry=retry_if_exception(is_retryable),
             wait=self._retry.wait,
             stop=stop_after_attempt(self._retry.max_attempts),
             reraise=True,
         ):
             with attempt:
-                response = self._client.get(url, params=params)
+                response = await self._client.get(url, params=params)
                 if response.status_code >= 400:
                     raise ForecastHTTPError.from_response(response)
                 return response.json()
         raise RuntimeError("unreachable")  # pragma: no cover
 
-    def _post(self, url: str, json: dict[str, Any]) -> dict[str, Any]:
+    async def _post(self, url: str, json: dict[str, Any]) -> dict[str, Any]:
         """Make a POST request with retry and error mapping.
 
         Args:
@@ -123,14 +125,14 @@ class SyncHarvestClient:
         Raises:
             ForecastHTTPError: On HTTP 4xx/5xx responses.
         """
-        for attempt in Retrying(
+        async for attempt in AsyncRetrying(
             retry=retry_if_exception(is_retryable),
             wait=self._retry.wait,
             stop=stop_after_attempt(self._retry.max_attempts),
             reraise=True,
         ):
             with attempt:
-                response = self._client.post(
+                response = await self._client.post(
                     url, json=json, headers={"Content-Type": "application/json"}
                 )
                 if response.status_code >= 400:
@@ -138,14 +140,14 @@ class SyncHarvestClient:
                 return response.json()
         raise RuntimeError("unreachable")  # pragma: no cover
 
-    def paginate(
+    async def paginate(
         self,
         path: str,
         list_field: str,
         *,
         params: dict[str, str] | None = None,
         per_page: int = 2000,
-    ) -> Iterator[dict[str, Any]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """Yield raw item dicts across every page of a Harvest list endpoint.
 
         Follows ``links.next`` for pagination (as the Harvest docs require)
@@ -170,13 +172,14 @@ class SyncHarvestClient:
             if next_url in seen_urls:
                 break
             seen_urls.add(next_url)
-            payload = self._get(next_url, params=merged if is_first else None)
-            yield from payload.get(list_field, [])
+            payload = await self._get(next_url, params=merged if is_first else None)
+            for item in payload.get(list_field, []):
+                yield item
             links: dict[str, Any] = payload.get("links") or {}
             next_url = links.get("next")
             is_first = False
 
-    def list_projects(
+    async def list_projects(
         self,
         *,
         is_active: bool | None = None,
@@ -202,10 +205,10 @@ class SyncHarvestClient:
         put_updated_since(params, updated_since)
         return [
             HarvestProject.model_validate(item)
-            for item in self.paginate("/projects", "projects", params=params)
+            async for item in self.paginate("/projects", "projects", params=params)
         ]
 
-    def list_users(
+    async def list_users(
         self,
         *,
         is_active: bool | None = None,
@@ -226,10 +229,10 @@ class SyncHarvestClient:
         put_updated_since(params, updated_since)
         return [
             HarvestUser.model_validate(item)
-            for item in self.paginate("/users", "users", params=params)
+            async for item in self.paginate("/users", "users", params=params)
         ]
 
-    def list_clients(
+    async def list_clients(
         self,
         *,
         is_active: bool | None = None,
@@ -250,10 +253,10 @@ class SyncHarvestClient:
         put_updated_since(params, updated_since)
         return [
             HarvestClient.model_validate(item)
-            for item in self.paginate("/clients", "clients", params=params)
+            async for item in self.paginate("/clients", "clients", params=params)
         ]
 
-    def list_contacts(
+    async def list_contacts(
         self, *, updated_since: datetime | str | None = None
     ) -> list[HarvestContact]:
         """List all contacts in the Harvest account.
@@ -268,10 +271,12 @@ class SyncHarvestClient:
         put_updated_since(params, updated_since)
         return [
             HarvestContact.model_validate(item)
-            for item in self.paginate("/contacts", "contacts", params=params)
+            async for item in self.paginate("/contacts", "contacts", params=params)
         ]
 
-    def list_roles(self, *, updated_since: datetime | str | None = None) -> list[HarvestRole]:
+    async def list_roles(
+        self, *, updated_since: datetime | str | None = None
+    ) -> list[HarvestRole]:
         """List all roles in the Harvest account.
 
         Args:
@@ -284,10 +289,10 @@ class SyncHarvestClient:
         put_updated_since(params, updated_since)
         return [
             HarvestRole.model_validate(item)
-            for item in self.paginate("/roles", "roles", params=params)
+            async for item in self.paginate("/roles", "roles", params=params)
         ]
 
-    def list_tasks(
+    async def list_tasks(
         self,
         *,
         is_active: bool | None = None,
@@ -308,10 +313,10 @@ class SyncHarvestClient:
         put_updated_since(params, updated_since)
         return [
             HarvestTask.model_validate(item)
-            for item in self.paginate("/tasks", "tasks", params=params)
+            async for item in self.paginate("/tasks", "tasks", params=params)
         ]
 
-    def list_time_entries(
+    async def list_time_entries(
         self,
         *,
         user_id: int | None = None,
@@ -346,10 +351,10 @@ class SyncHarvestClient:
         put_updated_since(params, updated_since)
         return [
             HarvestTimeEntry.model_validate(item)
-            for item in self.paginate("/time_entries", "time_entries", params=params)
+            async for item in self.paginate("/time_entries", "time_entries", params=params)
         ]
 
-    def create_time_entry(
+    async def create_time_entry(
         self,
         *,
         project_id: int,
@@ -387,10 +392,10 @@ class SyncHarvestClient:
             body["user_id"] = user_id
         if notes is not None:
             body["notes"] = notes
-        data = self._post("/time_entries", body)
+        data = await self._post("/time_entries", body)
         return HarvestTimeEntry.model_validate(data)
 
-    def list_user_assignments(
+    async def list_user_assignments(
         self,
         project_id: int | None = None,
         *,
@@ -415,10 +420,10 @@ class SyncHarvestClient:
         )
         return [
             HarvestUserAssignment.model_validate(item)
-            for item in self.paginate(path, "user_assignments", params=params)
+            async for item in self.paginate(path, "user_assignments", params=params)
         ]
 
-    def list_task_assignments(
+    async def list_task_assignments(
         self,
         *,
         is_active: bool | None = None,
@@ -440,10 +445,10 @@ class SyncHarvestClient:
         put_updated_since(params, updated_since)
         return [
             HarvestTaskAssignment.model_validate(item)
-            for item in self.paginate("/task_assignments", "task_assignments", params=params)
+            async for item in self.paginate("/task_assignments", "task_assignments", params=params)
         ]
 
-    def list_invoices(
+    async def list_invoices(
         self,
         *,
         state: str | None = None,
@@ -465,10 +470,10 @@ class SyncHarvestClient:
         put_updated_since(params, updated_since)
         return [
             HarvestInvoice.model_validate(item)
-            for item in self.paginate("/invoices", "invoices", params=params)
+            async for item in self.paginate("/invoices", "invoices", params=params)
         ]
 
-    def list_estimates(
+    async def list_estimates(
         self,
         *,
         state: str | None = None,
@@ -490,17 +495,17 @@ class SyncHarvestClient:
         put_updated_since(params, updated_since)
         return [
             HarvestEstimate.model_validate(item)
-            for item in self.paginate("/estimates", "estimates", params=params)
+            async for item in self.paginate("/estimates", "estimates", params=params)
         ]
 
-    def whoami(self) -> HarvestCurrentUser:
+    async def whoami(self) -> HarvestCurrentUser:
         """Retrieve the current authenticated user.
 
         Returns:
             HarvestCurrentUser object.
         """
-        data = self._get("/users/me")
+        data = await self._get("/users/me")
         return HarvestCurrentUser.model_validate(data)
 
 
-__all__ = ["SyncHarvestClient"]
+__all__ = ["AsyncHarvestClient"]

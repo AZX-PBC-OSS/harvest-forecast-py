@@ -1,14 +1,15 @@
 # harvest-forecast-py
 
-Python client for the Harvest Forecast API — async and sync, with full coverage.
+Python clients for the Harvest Forecast API **and** the Harvest API v2 — async and sync, with full coverage.
 
 ## Features
 
-- **Full API coverage** — All resources, mutations, aggregates, and meta endpoints from the [Forecast API](https://github.com/joefitzgerald/forecast)
-- **Async and sync clients** — `ForecastClient` for async/await code, `SyncForecastClient` for synchronous code (generated via [`unasync`](https://github.com/python-trio/unasync))
+- **Full Forecast API coverage** — All resources, mutations, aggregates, and meta endpoints from the [Forecast API](https://github.com/joefitzgerald/forecast)
+- **Harvest API v2 coverage** — Clients, contacts, roles, tasks, users, projects, user/task assignments, time entries, invoices, estimates, `create_time_entry`, and `whoami`, with `updated_since` support on every list endpoint
+- **Async and sync clients** — `ForecastClient` / `HarvestClient` for async/await code, `SyncForecastClient` / `SyncHarvestClient` for synchronous code
 - **Fully typed** — Pydantic v2 models for all responses, type hints throughout, `py.typed` marker included
 - **Automatic retry** — Configurable retry policy with exponential backoff and jitter for transient failures (429, 5xx, network errors)
-- **Pagination & windowing** — Handles Forecast's pagination and the 2520-day assignment date range limit internally
+- **Pagination & windowing** — Handles pagination and the 2520-day Forecast assignment date range limit internally; public `paginate()` methods yield raw payload dicts for pipelines that stage responses verbatim
 - **Structured exceptions** — Typed exception hierarchy mapping HTTP status codes to specific errors
 - **Published on PyPI** — Install with `pip` or `uv`, no build step required
 
@@ -130,6 +131,57 @@ The library does **not** load configuration from environment variables or files 
 | `placeholder_heatmap(from, to, placeholder_id, scale)` | `list[PlaceholderHeatmapItem]` |
 
 All methods return materialized objects — internal pagination and date windowing are hidden from callers.
+
+## Harvest API v2
+
+The same package ships clients for the [Harvest API v2](https://help.getharvest.com/api-v2/):
+`HarvestClient` (async) and `SyncHarvestClient`, authenticated with the same personal access token
+plus your **Harvest** account ID (sent as the `Harvest-Account-Id` header).
+
+```python
+import asyncio
+from datetime import datetime, UTC
+from harvest_forecast import HarvestClient
+
+async def main() -> None:
+    async with HarvestClient(
+        access_token="your-personal-access-token",
+        account_id="123456",
+        user_agent="my-app (you@example.com)",
+    ) as client:
+        # Incremental sync: everything changed in the last day
+        entries = await client.list_time_entries(
+            updated_since=datetime(2026, 7, 26, tzinfo=UTC),
+        )
+        invoices = await client.list_invoices(state="open")
+
+asyncio.run(main())
+```
+
+| Method | Notes |
+|---|---|
+| `list_clients(is_active=, updated_since=)` | |
+| `list_contacts(updated_since=)` | |
+| `list_roles(updated_since=)` | |
+| `list_tasks(is_active=, updated_since=)` | |
+| `list_users(is_active=, updated_since=)` | |
+| `list_projects(is_active=, client_id=, updated_since=)` | |
+| `list_user_assignments(project_id=None, updated_since=)` | Account-wide, or per project when `project_id` is given |
+| `list_task_assignments(is_active=, updated_since=)` | |
+| `list_time_entries(user_id=, project_id=, from_date=, to_date=, updated_since=)` | Prefer `updated_since` for incremental sync — it catches edits to old entries |
+| `list_invoices(state=, updated_since=)` | |
+| `list_estimates(state=, updated_since=)` | |
+| `create_time_entry(...)` | |
+| `whoami()` | |
+| `paginate(path, list_field, params=, per_page=)` | Escape hatch: yields raw payload dicts across every page |
+
+Every list method accepts `updated_since` as a `datetime` (normalised to UTC, emitted as
+`YYYY-MM-DDTHH:MM:SSZ`) or as a pre-formatted string. Forecast-side list methods also expose
+`paginate()` / `paginate_windowed()` for raw payload access.
+
+> **Breaking change in 0.3.0:** the top-level `HarvestClient` export is now the *async* Harvest
+> client (matching `ForecastClient`). In 0.2.x it aliased the sync client; use
+> `SyncHarvestClient` for synchronous code.
 
 ## Error Handling
 

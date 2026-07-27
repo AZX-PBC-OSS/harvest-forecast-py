@@ -16,8 +16,8 @@ __license__ = "MIT"
 __url__ = "https://github.com/AZX-PBC-OSS/harvest-forecast-py"
 
 from ._async.client import AsyncForecastClient as ForecastClient
+from ._harvest.async_client import AsyncHarvestClient as HarvestClient
 from ._harvest.client import SyncHarvestClient
-from ._harvest.client import SyncHarvestClient as HarvestClient
 from ._sync.client import SyncForecastClient
 from .exceptions import (
     ForecastAuthError,
@@ -40,10 +40,15 @@ from .schemas import (
     ForecastModel,
     FutureScheduledHoursItem,
     HarvestClientRef,
+    HarvestContact,
     HarvestCurrentUser,
+    HarvestEstimate,
+    HarvestInvoice,
     HarvestProject,
     HarvestProjectRef,
+    HarvestRole,
     HarvestTask,
+    HarvestTaskAssignment,
     HarvestTaskRef,
     HarvestTimeEntry,
     HarvestUser,
@@ -88,10 +93,15 @@ __all__ = [
     "FutureScheduledHoursItem",
     "HarvestClient",
     "HarvestClientRef",
+    "HarvestContact",
     "HarvestCurrentUser",
+    "HarvestEstimate",
+    "HarvestInvoice",
     "HarvestProject",
     "HarvestProjectRef",
+    "HarvestRole",
     "HarvestTask",
+    "HarvestTaskAssignment",
     "HarvestTaskRef",
     "HarvestTimeEntry",
     "HarvestUser",

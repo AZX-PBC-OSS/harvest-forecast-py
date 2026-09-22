@@ -389,6 +389,62 @@ def test_list_time_entries_with_date_objects(
     assert qs["to"] == ["2025-01-31"]
 
 
+def test_list_time_entries_with_approval_status(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/time_entries").mock(
+            return_value=httpx.Response(200, json={"time_entries": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_time_entries(approval_status="unsubmitted")
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["approval_status"] == ["unsubmitted"]
+
+
+def test_list_time_entries_approval_status_omitted_when_none(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/time_entries").mock(
+            return_value=httpx.Response(200, json={"time_entries": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_time_entries()
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert "approval_status" not in qs
+
+
+def test_list_time_entries_approval_status_normalised(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/time_entries").mock(
+            return_value=httpx.Response(200, json={"time_entries": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_time_entries(approval_status="  Submitted ")
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["approval_status"] == ["submitted"]
+
+
+def test_list_time_entries_approval_status_invalid(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    # an incremental poller reads empty as "nothing to observe" — a typo must
+    # fail loudly, not masquerade as a clean poll.
+    with respx.mock(assert_all_called=False) as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/time_entries").mock(
+            return_value=httpx.Response(200, json={"time_entries": [], "links": {}}),
+        )
+        with (
+            SyncHarvestClient(**harvest_client_kwargs) as client,
+            pytest.raises(ValueError, match=r"approval_status"),
+        ):
+            client.list_time_entries(approval_status="approvaed")
+    assert route.call_count == 0
+
+
 # ---------- create time entry ----------
 
 
@@ -871,8 +927,10 @@ def test_list_task_assignments(harvest_client_kwargs: dict[str, object]) -> None
         mock.route(method="GET", url__startswith=f"{BASE}/task_assignments").mock(
             return_value=httpx.Response(
                 200,
-                json={"task_assignments": [_task_assignment_data(1), _task_assignment_data(2)],
-                      "links": {}},
+                json={
+                    "task_assignments": [_task_assignment_data(1), _task_assignment_data(2)],
+                    "links": {},
+                },
             ),
         )
         with SyncHarvestClient(**harvest_client_kwargs) as client:
@@ -958,9 +1016,7 @@ def test_list_invoices_with_filters(harvest_client_kwargs: dict[str, object]) ->
 def test_list_estimates(harvest_client_kwargs: dict[str, object]) -> None:
     with respx.mock() as mock:
         mock.route(method="GET", url__startswith=f"{BASE}/estimates").mock(
-            return_value=httpx.Response(
-                200, json={"estimates": [_estimate_data(1)], "links": {}}
-            ),
+            return_value=httpx.Response(200, json={"estimates": [_estimate_data(1)], "links": {}}),
         )
         with SyncHarvestClient(**harvest_client_kwargs) as client:
             estimates = client.list_estimates()
@@ -1023,9 +1079,7 @@ def test_paginate_sends_per_page(harvest_client_kwargs: dict[str, object]) -> No
 def test_paginate_public_returns_raw_dicts(harvest_client_kwargs: dict[str, object]) -> None:
     with respx.mock() as mock:
         mock.route(method="GET", url__startswith=f"{BASE}/projects").mock(
-            return_value=httpx.Response(
-                200, json={"projects": [_project_data(1)], "links": {}}
-            ),
+            return_value=httpx.Response(200, json={"projects": [_project_data(1)], "links": {}}),
         )
         with SyncHarvestClient(**harvest_client_kwargs) as client:
             items = list(client.paginate("/projects", "projects"))

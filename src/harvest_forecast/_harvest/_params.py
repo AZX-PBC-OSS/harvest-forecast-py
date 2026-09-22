@@ -2,6 +2,8 @@
 
 from datetime import UTC, datetime
 
+APPROVAL_STATUSES: frozenset[str] = frozenset({"unsubmitted", "submitted", "approved"})
+
 
 def format_updated_since(value: datetime | str) -> str:
     """Format an `updated_since` filter the way Harvest API v2 expects.
@@ -30,4 +32,22 @@ def put_updated_since(params: dict[str, str], value: datetime | str | None) -> N
         params["updated_since"] = format_updated_since(value)
 
 
-__all__ = ["format_updated_since", "put_updated_since"]
+def put_approval_status(params: dict[str, str], value: str | None) -> None:
+    """Add `approval_status` to *params* when a value is provided.
+
+    Values are trimmed and lower-cased, then validated against the statuses
+    Harvest documents for this filter (`unsubmitted`, `submitted`,
+    `approved`) — an unrecognised value raises `ValueError` rather than being
+    sent, because the API answers an invalid status with an empty list and a
+    typo must not look like a clean poll.
+    """
+    if value is None:
+        return
+    normalized = value.strip().lower()
+    if normalized not in APPROVAL_STATUSES:
+        allowed = ", ".join(sorted(APPROVAL_STATUSES))
+        raise ValueError(f"approval_status must be one of {allowed}, got {value!r}")
+    params["approval_status"] = normalized
+
+
+__all__ = ["APPROVAL_STATUSES", "format_updated_since", "put_approval_status", "put_updated_since"]

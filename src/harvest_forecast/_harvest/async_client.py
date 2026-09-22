@@ -23,7 +23,7 @@ from ..schemas import (
     HarvestUser,
     HarvestUserAssignment,
 )
-from ._params import put_updated_since
+from ._params import put_approval_status, put_updated_since
 
 
 class AsyncHarvestClient:
@@ -274,9 +274,7 @@ class AsyncHarvestClient:
             async for item in self.paginate("/contacts", "contacts", params=params)
         ]
 
-    async def list_roles(
-        self, *, updated_since: datetime | str | None = None
-    ) -> list[HarvestRole]:
+    async def list_roles(self, *, updated_since: datetime | str | None = None) -> list[HarvestRole]:
         """List all roles in the Harvest account.
 
         Args:
@@ -324,6 +322,7 @@ class AsyncHarvestClient:
         from_date: str | date | None = None,
         to_date: str | date | None = None,
         updated_since: datetime | str | None = None,
+        approval_status: str | None = None,
     ) -> list[HarvestTimeEntry]:
         """List time entries, optionally filtered.
 
@@ -335,9 +334,16 @@ class AsyncHarvestClient:
             updated_since: Only return time entries updated at or after this
                 datetime. Preferred over date filters for incremental sync —
                 it catches edits to old entries.
+            approval_status: Only return time entries with this approval
+                status — `unsubmitted`, `submitted` or `approved`. Requires
+                Timesheet Approval to be enabled on the account.
 
         Returns:
             List of HarvestTimeEntry objects.
+
+        Raises:
+            ValueError: If `approval_status` is not one of the documented
+                values.
         """
         params: dict[str, str] = {}
         if user_id is not None:
@@ -349,6 +355,7 @@ class AsyncHarvestClient:
         if to_date is not None:
             params["to"] = to_date.isoformat() if isinstance(to_date, date) else to_date
         put_updated_since(params, updated_since)
+        put_approval_status(params, approval_status)
         return [
             HarvestTimeEntry.model_validate(item)
             async for item in self.paginate("/time_entries", "time_entries", params=params)
@@ -415,7 +422,8 @@ class AsyncHarvestClient:
         params: dict[str, str] = {}
         put_updated_since(params, updated_since)
         path = (
-            f"/projects/{project_id}/user_assignments" if project_id is not None
+            f"/projects/{project_id}/user_assignments"
+            if project_id is not None
             else "/user_assignments"
         )
         return [

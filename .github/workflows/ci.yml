@@ -114,7 +114,8 @@ jobs:
         run: uv sync --group dev
 
       - name: Run pip-audit
-        run: uv run --with pip-audit pip-audit
+        # pip is uv's seed inside the ephemeral audit env, not a project dep; drop once setup-uv ships pip >= 26.2
+        run: uv run --with pip-audit pip-audit --ignore-vuln PYSEC-2026-3721
 
   build:
     runs-on: ubuntu-latest

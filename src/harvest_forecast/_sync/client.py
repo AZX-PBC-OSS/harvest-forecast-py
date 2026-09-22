@@ -372,9 +372,7 @@ class SyncForecastClient:
         """
         return [
             RepeatedAssignmentSet.model_validate(item)
-            for item in self.paginate(
-                "/repeated_assignment_sets", "repeated_assignment_sets"
-            )
+            for item in self.paginate("/repeated_assignment_sets", "repeated_assignment_sets")
         ]
 
     def list_user_connections(self) -> list[UserConnection]:

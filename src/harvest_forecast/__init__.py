@@ -9,7 +9,7 @@ Canonical imports:
     from harvest_forecast import ForecastError, ForecastHTTPError
 """
 
-__version__ = "0.3.0"  # x-release-please-version
+__version__ = "0.4.0"  # x-release-please-version
 __author__ = "AZX, PBC."
 __email__ = "oss@azx.io"
 __license__ = "MIT"

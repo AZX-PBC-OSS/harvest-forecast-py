@@ -927,8 +927,10 @@ def test_list_task_assignments(harvest_client_kwargs: dict[str, object]) -> None
         mock.route(method="GET", url__startswith=f"{BASE}/task_assignments").mock(
             return_value=httpx.Response(
                 200,
-                json={"task_assignments": [_task_assignment_data(1), _task_assignment_data(2)],
-                      "links": {}},
+                json={
+                    "task_assignments": [_task_assignment_data(1), _task_assignment_data(2)],
+                    "links": {},
+                },
             ),
         )
         with SyncHarvestClient(**harvest_client_kwargs) as client:
@@ -1014,9 +1016,7 @@ def test_list_invoices_with_filters(harvest_client_kwargs: dict[str, object]) ->
 def test_list_estimates(harvest_client_kwargs: dict[str, object]) -> None:
     with respx.mock() as mock:
         mock.route(method="GET", url__startswith=f"{BASE}/estimates").mock(
-            return_value=httpx.Response(
-                200, json={"estimates": [_estimate_data(1)], "links": {}}
-            ),
+            return_value=httpx.Response(200, json={"estimates": [_estimate_data(1)], "links": {}}),
         )
         with SyncHarvestClient(**harvest_client_kwargs) as client:
             estimates = client.list_estimates()
@@ -1079,9 +1079,7 @@ def test_paginate_sends_per_page(harvest_client_kwargs: dict[str, object]) -> No
 def test_paginate_public_returns_raw_dicts(harvest_client_kwargs: dict[str, object]) -> None:
     with respx.mock() as mock:
         mock.route(method="GET", url__startswith=f"{BASE}/projects").mock(
-            return_value=httpx.Response(
-                200, json={"projects": [_project_data(1)], "links": {}}
-            ),
+            return_value=httpx.Response(200, json={"projects": [_project_data(1)], "links": {}}),
         )
         with SyncHarvestClient(**harvest_client_kwargs) as client:
             items = list(client.paginate("/projects", "projects"))

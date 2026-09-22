@@ -274,9 +274,7 @@ class AsyncHarvestClient:
             async for item in self.paginate("/contacts", "contacts", params=params)
         ]
 
-    async def list_roles(
-        self, *, updated_since: datetime | str | None = None
-    ) -> list[HarvestRole]:
+    async def list_roles(self, *, updated_since: datetime | str | None = None) -> list[HarvestRole]:
         """List all roles in the Harvest account.
 
         Args:
@@ -424,7 +422,8 @@ class AsyncHarvestClient:
         params: dict[str, str] = {}
         put_updated_since(params, updated_since)
         path = (
-            f"/projects/{project_id}/user_assignments" if project_id is not None
+            f"/projects/{project_id}/user_assignments"
+            if project_id is not None
             else "/user_assignments"
         )
         return [

@@ -253,9 +253,7 @@ class SyncHarvestClient:
             for item in self.paginate("/clients", "clients", params=params)
         ]
 
-    def list_contacts(
-        self, *, updated_since: datetime | str | None = None
-    ) -> list[HarvestContact]:
+    def list_contacts(self, *, updated_since: datetime | str | None = None) -> list[HarvestContact]:
         """List all contacts in the Harvest account.
 
         Args:
@@ -419,7 +417,8 @@ class SyncHarvestClient:
         params: dict[str, str] = {}
         put_updated_since(params, updated_since)
         path = (
-            f"/projects/{project_id}/user_assignments" if project_id is not None
+            f"/projects/{project_id}/user_assignments"
+            if project_id is not None
             else "/user_assignments"
         )
         return [

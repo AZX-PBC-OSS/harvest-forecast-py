@@ -372,9 +372,7 @@ class AsyncForecastClient:
         """
         return [
             RepeatedAssignmentSet.model_validate(item)
-            async for item in self.paginate(
-                "/repeated_assignment_sets", "repeated_assignment_sets"
-            )
+            async for item in self.paginate("/repeated_assignment_sets", "repeated_assignment_sets")
         ]
 
     async def list_user_connections(self) -> list[UserConnection]:

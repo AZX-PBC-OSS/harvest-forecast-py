@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/AZX-PBC-OSS/harvest-forecast-py/compare/v0.3.0...v0.4.0) (2026-09-22)
+
+
+### Features
+
+* time entry approval lifecycle fields + approval_status filter ([#8](https://github.com/AZX-PBC-OSS/harvest-forecast-py/issues/8)) ([a5f20f6](https://github.com/AZX-PBC-OSS/harvest-forecast-py/commit/a5f20f6e7bdfb55c2025f3400d000cfd7c30487d))
+
 ## [0.3.0](https://github.com/AZX-PBC-OSS/harvest-forecast-py/compare/v0.2.1...v0.3.0) (2026-07-27)
 
 

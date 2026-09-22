@@ -389,6 +389,62 @@ def test_list_time_entries_with_date_objects(
     assert qs["to"] == ["2025-01-31"]
 
 
+def test_list_time_entries_with_approval_status(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/time_entries").mock(
+            return_value=httpx.Response(200, json={"time_entries": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_time_entries(approval_status="unsubmitted")
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["approval_status"] == ["unsubmitted"]
+
+
+def test_list_time_entries_approval_status_omitted_when_none(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/time_entries").mock(
+            return_value=httpx.Response(200, json={"time_entries": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_time_entries()
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert "approval_status" not in qs
+
+
+def test_list_time_entries_approval_status_normalised(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    with respx.mock() as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/time_entries").mock(
+            return_value=httpx.Response(200, json={"time_entries": [], "links": {}}),
+        )
+        with SyncHarvestClient(**harvest_client_kwargs) as client:
+            client.list_time_entries(approval_status="  Submitted ")
+    qs = parse_qs(urlparse(str(route.calls[0].request.url)).query)
+    assert qs["approval_status"] == ["submitted"]
+
+
+def test_list_time_entries_approval_status_invalid(
+    harvest_client_kwargs: dict[str, object],
+) -> None:
+    # an incremental poller reads empty as "nothing to observe" — a typo must
+    # fail loudly, not masquerade as a clean poll.
+    with respx.mock(assert_all_called=False) as mock:
+        route = mock.route(method="GET", url__startswith=f"{BASE}/time_entries").mock(
+            return_value=httpx.Response(200, json={"time_entries": [], "links": {}}),
+        )
+        with (
+            SyncHarvestClient(**harvest_client_kwargs) as client,
+            pytest.raises(ValueError, match=r"approval_status"),
+        ):
+            client.list_time_entries(approval_status="approvaed")
+    assert route.call_count == 0
+
+
 # ---------- create time entry ----------
 
 

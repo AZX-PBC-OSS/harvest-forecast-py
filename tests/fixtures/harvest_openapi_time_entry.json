@@ -1,0 +1,334 @@
+{
+  "source": "Snapshot of the TimeEntry object schema from the vendored Harvest API v2 OpenAPI document at harvest-sql-sync/docs/api/harvest-openapi.yaml (Harvest's official schema, vendored).",
+  "extracted": "2026-09-21",
+  "notes": [
+    "Harvest's OpenAPI omits `required` arrays and marks most properties nullable; requiredness on the SDK models is judged from live behaviour, not from this snapshot.",
+    "is_explicitly_locked is returned by the live API (account probes on the extraction date) but is absent from the vendored OpenAPI - it is recorded in live_observed_addendum rather than silently merged.",
+    "embedded_user_assignment / embedded_task_assignment are the shapes Harvest nests inside a time entry (see the vendored help-center time-entries page example) - subsets of the standalone assignment resources, so they are checked separately from UserAssignment/TaskAssignment."
+  ],
+  "time_entry": {
+    "id": {
+      "type": "integer",
+      "nullable": true
+    },
+    "spent_date": {
+      "type": "string",
+      "nullable": true,
+      "format": "date"
+    },
+    "user": {
+      "type": "object",
+      "nullable": true,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "nullable": true
+        },
+        "name": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "user_assignment": {
+      "nullable": true,
+      "anyOf": [
+        {
+          "type": "object",
+          "$ref": "#/components/schemas/UserAssignment"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "client": {
+      "type": "object",
+      "nullable": true,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "nullable": true
+        },
+        "name": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "nullable": true,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "nullable": true
+        },
+        "name": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "nullable": true,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "nullable": true
+        },
+        "name": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "task_assignment": {
+      "nullable": true,
+      "anyOf": [
+        {
+          "type": "object",
+          "$ref": "#/components/schemas/TaskAssignment"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "external_reference": {
+      "type": "object",
+      "nullable": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "nullable": true
+        },
+        "group_id": {
+          "type": "string",
+          "nullable": true
+        },
+        "account_id": {
+          "type": "string",
+          "nullable": true
+        },
+        "permalink": {
+          "type": "string",
+          "nullable": true
+        },
+        "service": {
+          "type": "string",
+          "nullable": true
+        },
+        "service_icon_url": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "invoice": {
+      "type": "object",
+      "nullable": true,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "nullable": true
+        },
+        "number": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "hours": {
+      "type": "number",
+      "nullable": true,
+      "format": "float"
+    },
+    "hours_without_timer": {
+      "type": "number",
+      "nullable": true,
+      "format": "float"
+    },
+    "rounded_hours": {
+      "type": "number",
+      "nullable": true,
+      "format": "float"
+    },
+    "notes": {
+      "type": "string",
+      "nullable": true
+    },
+    "is_locked": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "locked_reason": {
+      "type": "string",
+      "nullable": true
+    },
+    "is_closed": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "approval_status": {
+      "type": "string",
+      "nullable": true
+    },
+    "is_billed": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "timer_started_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "started_time": {
+      "type": "string",
+      "nullable": true
+    },
+    "ended_time": {
+      "type": "string",
+      "nullable": true
+    },
+    "is_running": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "billable": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "budgeted": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "billable_rate": {
+      "type": "number",
+      "nullable": true,
+      "format": "float"
+    },
+    "cost_rate": {
+      "type": "number",
+      "nullable": true,
+      "format": "float"
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "live_observed_addendum": {
+    "is_explicitly_locked": {
+      "type": "boolean",
+      "nullable": true
+    }
+  },
+  "embedded_user_assignment": {
+    "id": {
+      "type": "integer",
+      "nullable": true
+    },
+    "user": {
+      "type": "object",
+      "nullable": true,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "nullable": true
+        },
+        "name": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "is_active": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "is_project_manager": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "use_default_rates": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "hourly_rate": {
+      "type": "number",
+      "nullable": true,
+      "format": "float"
+    },
+    "budget": {
+      "type": "number",
+      "nullable": true,
+      "format": "float"
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  },
+  "embedded_task_assignment": {
+    "id": {
+      "type": "integer",
+      "nullable": true
+    },
+    "task": {
+      "type": "object",
+      "nullable": true,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "nullable": true
+        },
+        "name": {
+          "type": "string",
+          "nullable": true
+        }
+      }
+    },
+    "is_active": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "billable": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "hourly_rate": {
+      "type": "number",
+      "nullable": true,
+      "format": "float"
+    },
+    "budget": {
+      "type": "number",
+      "nullable": true,
+      "format": "float"
+    },
+    "created_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "nullable": true,
+      "format": "date-time"
+    }
+  }
+}

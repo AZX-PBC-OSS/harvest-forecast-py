@@ -168,7 +168,7 @@ asyncio.run(main())
 | `list_projects(is_active=, client_id=, updated_since=)` | |
 | `list_user_assignments(project_id=None, updated_since=)` | Account-wide, or per project when `project_id` is given |
 | `list_task_assignments(is_active=, updated_since=)` | |
-| `list_time_entries(user_id=, project_id=, from_date=, to_date=, updated_since=)` | Prefer `updated_since` for incremental sync — it catches edits to old entries |
+| `list_time_entries(user_id=, project_id=, from_date=, to_date=, updated_since=, approval_status=)` | Prefer `updated_since` for incremental sync — it catches edits to old entries. `approval_status` accepts `unsubmitted`/`submitted`/`approved` (requires Timesheet Approval) and raises `ValueError` on any other value. |
 | `list_invoices(state=, updated_since=)` | |
 | `list_estimates(state=, updated_since=)` | |
 | `create_time_entry(...)` | |

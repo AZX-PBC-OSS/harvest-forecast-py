@@ -329,6 +329,8 @@ class HarvestClient(ForecastModel):
     id: int
     name: str
     is_active: bool
+    address: str | None = None
+    statement_key: str | None = None
     currency: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -346,6 +348,17 @@ class HarvestProject(ForecastModel):
     budget: Decimal | None = None
     budget_by: str
     budget_is_monthly: bool
+    hourly_rate: Decimal | None = None
+    fee: Decimal | None = None
+    cost_budget: Decimal | None = None
+    cost_budget_include_expenses: bool | None = None
+    notify_when_over_budget: bool | None = None
+    over_budget_notification_percentage: Decimal | None = None
+    over_budget_notification_date: date | None = None
+    show_budget_to_all: bool | None = None
+    notes: str | None = None
+    starts_on: date | None = None
+    ends_on: date | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -355,12 +368,17 @@ class HarvestUser(ForecastModel):
     first_name: str
     last_name: str
     email: str
+    telephone: str | None = None
+    timezone: str | None = None
+    has_access_to_all_future_projects: bool | None = None
     is_active: bool
     is_contractor: bool
     weekly_capacity: int | None = None
     default_hourly_rate: Decimal | None = None
     cost_rate: Decimal | None = None
     roles: list[str] = Field(default_factory=list[str])
+    access_roles: list[str] = Field(default_factory=list[str])
+    avatar_url: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -389,6 +407,41 @@ class HarvestUserAssignment(ForecastModel):
     updated_at: datetime
 
 
+class HarvestTimeEntryUserAssignment(ForecastModel):
+    """The user assignment embedded in a time entry response.
+
+    A subset of the standalone `HarvestUserAssignment` resource — the shape
+    Harvest nests inside each time entry. Unknown keys are preserved.
+    """
+
+    id: int
+    user: HarvestUserRef | None = None
+    is_active: bool | None = None
+    is_project_manager: bool | None = None
+    use_default_rates: bool | None = None
+    hourly_rate: Decimal | None = None
+    budget: Decimal | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class HarvestTimeEntryTaskAssignment(ForecastModel):
+    """The task assignment embedded in a time entry response.
+
+    A subset of the standalone `HarvestTaskAssignment` resource — the shape
+    Harvest nests inside each time entry. Unknown keys are preserved.
+    """
+
+    id: int
+    task: HarvestTaskRef | None = None
+    is_active: bool | None = None
+    billable: bool | None = None
+    hourly_rate: Decimal | None = None
+    budget: Decimal | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
 class HarvestTimeEntry(ForecastModel):
     id: int
     spent_date: date
@@ -396,16 +449,38 @@ class HarvestTimeEntry(ForecastModel):
     client: HarvestClientRef
     project: HarvestProjectRef
     task: HarvestTaskRef
+    user_assignment: HarvestTimeEntryUserAssignment | None = None
+    task_assignment: HarvestTimeEntryTaskAssignment | None = None
     hours: Decimal
+    hours_without_timer: Decimal | None = None
+    rounded_hours: Decimal | None = None
     notes: str | None = None
     is_locked: bool
+    locked_reason: str | None = None
+    is_explicitly_locked: bool | None = None
     is_closed: bool
+    approval_status: str | None = Field(
+        default=None,
+        description=(
+            "The approval status of the time entry, when Timesheet Approval is"
+            " enabled. Observed values: unsubmitted, submitted, approved."
+            " Deliberately a plain string — a future Harvest status must not"
+            " break parsing."
+        ),
+    )
     is_billed: bool
+    timer_started_at: datetime | None = None
+    started_time: str | None = None
+    ended_time: str | None = None
+    is_running: bool | None = None
     billable: bool
-    created_at: datetime
-    updated_at: datetime
+    budgeted: bool | None = None
     billable_rate: Decimal | None = None
     cost_rate: Decimal | None = None
+    invoice: dict[str, Any] | None = None
+    external_reference: dict[str, Any] | None = None
+    created_at: datetime
+    updated_at: datetime
 
 
 class HarvestCurrentUser(ForecastModel):
@@ -459,6 +534,9 @@ class HarvestInvoice(ForecastModel):
     id: int
     client: dict[str, Any]
     line_items: list[dict[str, Any]] = Field(default_factory=list[dict[str, Any]])
+    estimate: dict[str, Any] | None = None
+    retainer: dict[str, Any] | None = None
+    payment_options: list[str] = Field(default_factory=list[str])
     creator: dict[str, Any] | None = None
     client_key: str | None = None
     number: str | None = None
@@ -539,6 +617,8 @@ __all__ = [
     "HarvestTaskAssignment",
     "HarvestTaskRef",
     "HarvestTimeEntry",
+    "HarvestTimeEntryTaskAssignment",
+    "HarvestTimeEntryUserAssignment",
     "HarvestUser",
     "HarvestUserAssignment",
     "HarvestUserRef",
